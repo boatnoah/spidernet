@@ -39,7 +39,8 @@ func main() {
 
 	store := store.NewStorage(db)
 
-	queue := queue.NewRedisClient(cfg.redisCfg.addr, cfg.redisCfg.pw, cfg.redisCfg.db)
+	rdsClient := queue.NewRedisClient(cfg.redisCfg.addr, cfg.redisCfg.pw, cfg.redisCfg.db)
+	queue := queue.NewRedisStorage(rdsClient)
 
 	app := &application{
 		config: cfg,

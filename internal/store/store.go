@@ -13,7 +13,14 @@ var (
 	QueryTimeoutDuration = time.Second * 5
 )
 
-type Storage struct{}
+type Storage struct {
+	Links interface {
+		Create(context.Context, int64)
+	}
+	Pages interface {
+		Create(context.Context, int64)
+	}
+}
 
 func NewStorage(db *sql.DB) Storage {
 	return Storage{}
