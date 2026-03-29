@@ -8,9 +8,9 @@ import (
 
 type Storage struct {
 	Queue interface {
-		Add(context.Context) error
-		PopLeft(context.Context) *Job
-		Peek(context.Context) *Job
+		Add(context.Context, *PageTask) error
+		PopLeft(context.Context) (*PageTask, error)
+		Peek(context.Context) (*PageTask, error) // Shows us the next Crawl
 	}
 }
 
