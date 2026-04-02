@@ -52,9 +52,6 @@ func (rq *RedisQueue) PopLeft(ctx context.Context) (*PageTask, error) {
 	return &pt, nil
 }
 
-// Im on vacation lol so lets make a quick video today
-// i got something wrong
-
 func (rq *RedisQueue) Peek(ctx context.Context) (*PageTask, error) {
 	result, err := rq.rds.LIndex(queueKey, 0).Result()
 	if err != nil {

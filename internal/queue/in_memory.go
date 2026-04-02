@@ -6,32 +6,32 @@ import (
 )
 
 type InMemory struct {
-	queue []PageTask
+	Queue []PageTask
 }
 
 var ErrQueueEmpty = errors.New("Queue is empty")
 
 func NewInMemory() *InMemory {
-	return &InMemory{queue: make([]PageTask, 8)}
+	return &InMemory{Queue: make([]PageTask, 0, 8)}
 }
 
 func (im *InMemory) Add(ctx context.Context, pt *PageTask) error {
-	im.queue = append(im.queue, *pt)
+	im.Queue = append(im.Queue, *pt)
 	return nil
 }
 func (im *InMemory) PopLeft(ctx context.Context) (*PageTask, error) {
-	if len(im.queue) == 0 {
+	if len(im.Queue) == 0 {
 		return nil, ErrQueueEmpty
 	}
-	first := im.queue[0]
-	im.queue = im.queue[:1]
+	first := im.Queue[0]
+	im.Queue = im.Queue[1:]
 	return &first, nil
 
 }
 
 func (im *InMemory) Peek(ctx context.Context) (*PageTask, error) {
-	if len(im.queue) == 0 {
+	if len(im.Queue) == 0 {
 		return nil, ErrQueueEmpty
 	}
-	return &im.queue[0], nil
+	return &im.Queue[0], nil
 }
