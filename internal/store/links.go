@@ -1,10 +1,54 @@
 package store
 
-import "database/sql"
+import (
+	"context"
+	"database/sql"
+
+	"github.com/google/uuid"
+)
+
+//
+// CREATE TABLE links (
+// crawl_job_id UUID NOT NULL REFERENCES crawl_jobs(id) ON DELETE CASCADE,
+// from_url TEXT NOT NULL,
+// to_url TEXT NOT NULL,
+// depth INT NOT NULL,
+// PRIMARY KEY (crawl_job_id, from_url, to_url)
+// );
+
+type Links struct {
+	CrawlJobID uuid.UUID `json:"crawl_job_id"`
+	FromURL    string    `json:"from_url"`
+	ToURL      string    `json:"to_url"`
+	Depth      int       `json:"depth"`
+}
 
 type LinkStore struct {
 	db *sql.DB
 }
 
-type Links struct {
+func (s *LinkStore) Create(ctx context.Context, linkPayload Links) error {
+	query := `
+		INSERT into links (crawl_job_id, from_url, to_url, depth) 
+		VALUES ($1, $2, $3, $4)		
+	`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	err := s.db.QueryRowContext(
+		ctx,
+		query,
+		linkPayload.CrawlJobID,
+		linkPayload.FromURL,
+		linkPayload.ToURL,
+		linkPayload.Depth,
+	).Err()
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+
 }

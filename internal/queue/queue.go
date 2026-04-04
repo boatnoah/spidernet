@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/go-redis/redis"
+	"github.com/redis/go-redis/v9"
 )
 
 type RedisQueue struct {
@@ -27,7 +27,7 @@ func (rq *RedisQueue) Add(ctx context.Context, pt *PageTask) error {
 		return err
 	}
 
-	err = rq.rds.RPush(queueKey, ptString).Err()
+	err = rq.rds.RPush(ctx, queueKey, ptString).Err()
 
 	if err != nil {
 		return err
@@ -35,15 +35,15 @@ func (rq *RedisQueue) Add(ctx context.Context, pt *PageTask) error {
 	return nil
 }
 
-func (rq *RedisQueue) PopLeft(ctx context.Context) (*PageTask, error) {
-	result, err := rq.rds.LPop(queueKey).Result()
+func (rq *RedisQueue) BlockingPop(ctx context.Context) (*PageTask, error) {
+	result, err := rq.rds.BLPop(ctx, 0, queueKey).Result()
 	if err != nil {
 		return nil, err
 	}
 
 	var pt PageTask
 
-	err = json.Unmarshal([]byte(result), &pt)
+	err = json.Unmarshal([]byte(result[1]), &pt)
 
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func (rq *RedisQueue) PopLeft(ctx context.Context) (*PageTask, error) {
 }
 
 func (rq *RedisQueue) Peek(ctx context.Context) (*PageTask, error) {
-	result, err := rq.rds.LIndex(queueKey, 0).Result()
+	result, err := rq.rds.LIndex(ctx, queueKey, 0).Result()
 	if err != nil {
 		return nil, err
 	}

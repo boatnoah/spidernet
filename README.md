@@ -38,3 +38,32 @@ type Link struct {
 	Depth      int
 }
 ```
+
+```sql
+CREATE TABLE crawl_jobs (
+id UUID PRIMARY KEY,
+start_url TEXT NOT NULL,
+status TEXT NOT NULL, -- 'running' | 'completed' | 'failed'
+max_depth INT NOT NULL,
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+completed_at TIMESTAMPTZ
+);
+
+CREATE TABLE pages (
+crawl_job_id UUID NOT NULL REFERENCES crawl_jobs(id) ON DELETE CASCADE,
+url TEXT NOT NULL,
+depth INT NOT NULL,
+http_status INT,
+fetch_error TEXT,
+PRIMARY KEY (crawl_job_id, url)
+);
+
+CREATE TABLE links (
+crawl_job_id UUID NOT NULL REFERENCES crawl_jobs(id) ON DELETE CASCADE,
+from_url TEXT NOT NULL,
+to_url TEXT NOT NULL,
+depth INT NOT NULL,
+PRIMARY KEY (crawl_job_id, from_url, to_url)
+);
+
+```

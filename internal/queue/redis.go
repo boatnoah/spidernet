@@ -1,6 +1,6 @@
 package queue
 
-import "github.com/go-redis/redis"
+import "github.com/redis/go-redis/v9"
 
 func NewRedisClient(addr, pw string, db int) *redis.Client {
 	return redis.NewClient(&redis.Options{
