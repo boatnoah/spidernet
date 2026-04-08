@@ -80,7 +80,7 @@ func (s *CrawlJobStore) UpdateStatus(ctx context.Context, jobID uuid.UUID, statu
 	return nil
 }
 
-func (s *CrawlJobStore) GetJobById(ctx context.Context, jobID uuid.UUID, status string) (*CrawlJob, error) {
+func (s *CrawlJobStore) GetJobById(ctx context.Context, jobID uuid.UUID) (*CrawlJob, error) {
 	query := `
 		SELECT * from crawl_job
 		WHERE id = $1

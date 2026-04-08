@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 var (
@@ -15,15 +17,25 @@ var (
 
 type Storage struct {
 	Links interface {
-		Create(context.Context, int64)
+		Create(context.Context, Links) error
+		GetAllLinksByJobID(context.Context, uuid.UUID) (*[]Links, error)
 	}
 	Pages interface {
-		Create(context.Context, int64)
+		Create(context.Context, PagePayload) error
+	}
+	CrawlJobs interface {
+		CreateJob(context.Context, CrawlJobPayload) (*JobID, error)
+		UpdateStatus(context.Context, uuid.UUID, string) error
+		GetJobById(context.Context, uuid.UUID) (*CrawlJob, error)
 	}
 }
 
 func NewStorage(db *sql.DB) Storage {
-	return Storage{}
+	return Storage{
+		Links:     &LinkStore{db},
+		Pages:     &PageStore{db},
+		CrawlJobs: &CrawlJobStore{db},
+	}
 }
 
 func withTx(db *sql.DB, ctx context.Context, fn func(*sql.Tx) error) error {
