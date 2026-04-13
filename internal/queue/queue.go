@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -12,9 +13,9 @@ type RedisQueue struct {
 }
 
 type PageTask struct {
-	CrawlJobID string `json:"crawl_job_id"`
-	URL        string `json:"url"`
-	Depth      int    `json:"depth"`
+	CrawlJobID uuid.UUID `json:"crawl_job_id"`
+	URL        string    `json:"url"`
+	Depth      int       `json:"depth"`
 }
 
 var queueKey = "crawlqueue"

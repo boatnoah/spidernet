@@ -86,7 +86,7 @@ func (app *application) mount() http.Handler {
 		r.Use(middleware.Logger)
 		r.Use(middleware.Recoverer)
 		r.Get("/health", app.healthCheckHandler)
-		r.Post("/crawl", app.jobCrawlerHandler)
+		r.Post("/crawl", app.submitJobHandler)
 	})
 
 	return r

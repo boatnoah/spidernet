@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/boatnoah/spidernet/internal/queue"
 	"github.com/boatnoah/spidernet/internal/store"
 	"github.com/google/uuid"
 )
@@ -17,7 +18,7 @@ type Response struct {
 	JobID uuid.UUID `json:"job_id"`
 }
 
-func (app *application) crawlJobHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) submitJobHandler(w http.ResponseWriter, r *http.Request) {
 
 	var requestBody JobPayload
 
@@ -40,9 +41,26 @@ func (app *application) crawlJobHandler(w http.ResponseWriter, r *http.Request) 
 			Status:   "running",
 		})
 
+	if err != nil {
+		http.Error(w, "Unable to provide response", http.StatusInternalServerError)
+		return
+
+	}
+
+	var pageTask queue.PageTask
+
+	pageTask.CrawlJobID = jobID.ID
+	pageTask.Depth = requestBody.Depth
+
+	err = app.queue.Add(r.Context(), &pageTask)
+	if err != nil {
+		http.Error(w, "unable to start job", http.StatusInternalServerError)
+		return
+	}
+
 	var response Response
 
-	response.jobID = jobID.ID
+	response.JobID = jobID.ID
 
 	responseJson, err := json.MarshalIndent(response, "", " ")
 

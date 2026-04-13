@@ -6,14 +6,12 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type Storage struct {
-	Queue interface {
-		Add(context.Context, *PageTask) error
-		BlockingPop(context.Context) (*PageTask, error)
-		Peek(context.Context) (*PageTask, error) // Shows us the next Crawl
-	}
+type Storage interface {
+	Add(context.Context, *PageTask) error
+	BlockingPop(context.Context) (*PageTask, error)
+	Peek(context.Context) (*PageTask, error) // Shows us the next Crawl
 }
 
 func NewRedisStorage(rbd *redis.Client) Storage {
-	return Storage{Queue: &RedisQueue{rbd}}
+	return &RedisQueue{rbd}
 }
