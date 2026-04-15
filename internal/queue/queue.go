@@ -20,6 +20,10 @@ type PageTask struct {
 
 var queueKey = "crawlqueue"
 
+func CreatePageTask(jobID uuid.UUID, url string, depth int) *PageTask {
+	return &PageTask{jobID, url, depth}
+}
+
 func (rq *RedisQueue) Add(ctx context.Context, pt *PageTask) error {
 
 	ptString, err := json.Marshal(pt)

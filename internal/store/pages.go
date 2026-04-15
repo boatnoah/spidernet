@@ -28,14 +28,14 @@ type PageStore struct {
 	db *sql.DB
 }
 
-type PagePayload struct {
+type PageRequestInfo struct {
 	Url        string `json:"url"`
-	Depth      string `json:"depth"`
+	Depth      int    `json:"depth"`
 	HttpStatus int    `json:"http_status"`
 	FetchError string `json:"fetch_error"`
 }
 
-func (s *PageStore) Create(ctx context.Context, p PagePayload) error {
+func (s *PageStore) Create(ctx context.Context, p PageRequestInfo) error {
 	query := `
 		INSERT INTO pages (url, depth, http_status, fetch_error)
 		VALUES ($1, $2, $3, $4)

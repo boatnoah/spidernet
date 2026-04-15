@@ -21,7 +21,7 @@ type Storage struct {
 		GetAllLinksByJobID(context.Context, uuid.UUID) (*[]Links, error)
 	}
 	Pages interface {
-		Create(context.Context, PagePayload) error
+		Create(context.Context, PageRequestInfo) error
 	}
 	CrawlJobs interface {
 		CreateJob(context.Context, CrawlJobPayload) (*JobID, error)
