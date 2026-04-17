@@ -69,7 +69,10 @@ func (c *CrawlerService) ProcessTask(ctx context.Context) error {
 		HttpStatus: statusCode,
 	}
 
-	c.store.Pages.Create(ctx, pageInfo)
+	err = c.store.Pages.Create(ctx, pageInfo)
+	if err != nil {
+		return err
+	}
 
 	links, err := extractLinks(doc)
 

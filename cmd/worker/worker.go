@@ -1,6 +1,10 @@
 package main
 
 import (
+	"context"
+	"log"
+	"time"
+
 	"github.com/boatnoah/spidernet/internal/crawler"
 )
 
@@ -29,9 +33,15 @@ type dbConfig struct {
 }
 
 func (w *worker) run() error {
+	log.Print("Starting worker...")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer log.Print("Ending worker...")
+	defer cancel()
+
 	for {
-
-		// service pulls the from block queue
+		err := w.svc.ProcessTask(ctx)
+		if err != nil {
+			return err
+		}
 	}
-
 }
