@@ -3,6 +3,7 @@ package crawler
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/boatnoah/spidernet/internal/queue"
@@ -34,6 +35,8 @@ func (c *CrawlerService) ProcessTask(ctx context.Context) error {
 		return err
 	}
 
+	log.Print(task)
+
 	jobID := task.CrawlJobID
 	depth := task.Depth
 
@@ -64,6 +67,7 @@ func (c *CrawlerService) ProcessTask(ctx context.Context) error {
 	}
 
 	pageInfo := store.PageRequestInfo{
+		CrawlJobID: jobID,
 		Url:        task.URL,
 		Depth:      task.Depth,
 		HttpStatus: statusCode,
@@ -71,6 +75,8 @@ func (c *CrawlerService) ProcessTask(ctx context.Context) error {
 
 	err = c.store.Pages.Create(ctx, pageInfo)
 	if err != nil {
+		// todo
+		// if its a duplicate just return nil
 		return err
 	}
 
@@ -79,6 +85,8 @@ func (c *CrawlerService) ProcessTask(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	// make sure to create a record on the links table
 
 	for _, link := range links {
 		pageTask := queue.CreatePageTask(jobID, link, depth+1)

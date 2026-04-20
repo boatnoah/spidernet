@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/boatnoah/spidernet/internal/queue"
@@ -10,8 +11,8 @@ import (
 )
 
 type JobPayload struct {
-	StartURL string
-	Depth    int
+	StartURL string `json:"start_url"`
+	Depth    int    `json:"depth"`
 }
 
 type Response struct {
@@ -42,17 +43,14 @@ func (app *application) submitJobHandler(w http.ResponseWriter, r *http.Request)
 		})
 
 	if err != nil {
+		log.Print(err)
 		http.Error(w, "Unable to provide response", http.StatusInternalServerError)
 		return
-
 	}
 
-	var pageTask queue.PageTask
+	pageTask := queue.CreatePageTask(jobID.ID, requestBody.StartURL, 0)
 
-	pageTask.CrawlJobID = jobID.ID
-	pageTask.Depth = requestBody.Depth
-
-	err = app.queue.Add(r.Context(), &pageTask)
+	err = app.queue.Add(r.Context(), pageTask)
 	if err != nil {
 		http.Error(w, "unable to start job", http.StatusInternalServerError)
 		return

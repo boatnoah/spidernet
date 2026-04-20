@@ -29,16 +29,17 @@ type PageStore struct {
 }
 
 type PageRequestInfo struct {
-	Url        string `json:"url"`
-	Depth      int    `json:"depth"`
-	HttpStatus int    `json:"http_status"`
-	FetchError string `json:"fetch_error"`
+	CrawlJobID uuid.UUID `json:"crawl_job_id"`
+	Url        string    `json:"url"`
+	Depth      int       `json:"depth"`
+	HttpStatus int       `json:"http_status"`
+	FetchError string    `json:"fetch_error"`
 }
 
 func (s *PageStore) Create(ctx context.Context, p PageRequestInfo) error {
 	query := `
-		INSERT INTO pages (url, depth, http_status, fetch_error)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO pages (crawl_job_id, url, depth, http_status, fetch_error)
+		VALUES ($1, $2, $3, $4, $5)
 	`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
@@ -47,6 +48,7 @@ func (s *PageStore) Create(ctx context.Context, p PageRequestInfo) error {
 	err := s.db.QueryRowContext(
 		ctx,
 		query,
+		p.CrawlJobID,
 		p.Url,
 		p.Depth,
 		p.HttpStatus,

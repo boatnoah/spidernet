@@ -20,7 +20,7 @@ type CrawlJob struct {
 	Status      string    `json:"status"`
 	MaxDepth    int       `json:"max_depth"`
 	CreatedAt   string    `json:"created_at"`
-	CompletedAt string    `json:"completed_at"`
+	CompletedAt *string   `json:"completed_at"`
 }
 
 type CrawlJobStore struct {
@@ -39,7 +39,7 @@ type JobID struct {
 
 func (s *CrawlJobStore) CreateJob(ctx context.Context, cj CrawlJobPayload) (*JobID, error) {
 
-	query := `INSERT INTO crawl_jobs (start_url, max_depth) VALUES ($1, $2, $3) RETURNING id, created_at`
+	query := `INSERT INTO crawl_jobs (start_url, status, max_depth) VALUES ($1, $2, $3) RETURNING id`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
@@ -66,7 +66,7 @@ func (s *CrawlJobStore) CreateJob(ctx context.Context, cj CrawlJobPayload) (*Job
 
 func (s *CrawlJobStore) UpdateStatus(ctx context.Context, jobID uuid.UUID, status string) error {
 	query := `
-		UPDATE crawl_job
+		UPDATE crawl_jobs
 		SET status = $1, completed_at = NOW()
 		WHERE id = $2
 	`
@@ -82,7 +82,7 @@ func (s *CrawlJobStore) UpdateStatus(ctx context.Context, jobID uuid.UUID, statu
 
 func (s *CrawlJobStore) GetJobById(ctx context.Context, jobID uuid.UUID) (*CrawlJob, error) {
 	query := `
-		SELECT * from crawl_job
+		SELECT * from crawl_jobs
 		WHERE id = $1
 	`
 

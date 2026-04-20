@@ -47,7 +47,7 @@ func main() {
 	queue := queue.NewRedisStorage(rdsClient)
 	client := &http.Client{Timeout: 30 * time.Second}
 
-	svc := crawler.NewCrawlerService(store, queue, rdsClient, client)
+	svc := crawler.NewCrawlerService(store, queue, client)
 
 	worker := worker{
 		svc: svc,
