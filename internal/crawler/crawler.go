@@ -2,6 +2,7 @@ package crawler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -26,8 +27,6 @@ func NewCrawlerService(store store.Storage, queue queue.Storage, client *http.Cl
 	}
 }
 
-// rollback any of the database transacations if anything fails
-
 func (c *CrawlerService) ProcessTask(ctx context.Context) error {
 	task, err := c.queue.BlockingPop(ctx)
 
@@ -43,6 +42,10 @@ func (c *CrawlerService) ProcessTask(ctx context.Context) error {
 	job, err := c.store.CrawlJobs.GetJobById(ctx, jobID)
 
 	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			log.Printf("skipping job with id:%v; job not found", jobID)
+			return nil
+		}
 		return err
 	}
 
@@ -75,8 +78,6 @@ func (c *CrawlerService) ProcessTask(ctx context.Context) error {
 
 	err = c.store.Pages.Create(ctx, pageInfo)
 	if err != nil {
-		// todo
-		// if its a duplicate just return nil
 		return err
 	}
 
@@ -86,7 +87,10 @@ func (c *CrawlerService) ProcessTask(ctx context.Context) error {
 		return err
 	}
 
-	// make sure to create a record on the links table
+	err = c.store.Links.CreateBatch(ctx, jobID, task.URL, links, depth)
+	if err != nil {
+		return err
+	}
 
 	for _, link := range links {
 		pageTask := queue.CreatePageTask(jobID, link, depth+1)

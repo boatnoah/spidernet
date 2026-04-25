@@ -12,12 +12,13 @@ import (
 var (
 	ErrNotFound          = errors.New("resource not found")
 	ErrConflict          = errors.New("resource already exists")
+	ErrDuplicateLink     = errors.New("duplicate link")
 	QueryTimeoutDuration = time.Second * 5
 )
 
 type Storage struct {
 	Links interface {
-		Create(context.Context, Links) error
+		CreateBatch(ctx context.Context, jobID uuid.UUID, fromURL string, toURLs []string, depth int) error
 		GetAllLinksByJobID(context.Context, uuid.UUID) (*[]Links, error)
 	}
 	Pages interface {
@@ -32,7 +33,7 @@ type Storage struct {
 
 func NewStorage(db *sql.DB) Storage {
 	return Storage{
-		Links:     &LinkStore{db},
+		Links:     &LinkStore{db: db},
 		Pages:     &PageStore{db},
 		CrawlJobs: &CrawlJobStore{db},
 	}

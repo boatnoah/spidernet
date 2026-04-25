@@ -7,15 +7,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// CREATE TABLE pages (
-// crawl_job_id UUID NOT NULL REFERENCES crawl_jobs(id) ON DELETE CASCADE,
-// url TEXT NOT NULL,
-// depth INT NOT NULL,
-// http_status INT,
-// fetch_error TEXT,
-// PRIMARY KEY (crawl_job_id, url)
-// );
-
 type Pages struct {
 	CrawlJobID uuid.UUID `json:"crawl_job_id"`
 	Url        string    `json:"url"`
@@ -40,6 +31,7 @@ func (s *PageStore) Create(ctx context.Context, p PageRequestInfo) error {
 	query := `
 		INSERT INTO pages (crawl_job_id, url, depth, http_status, fetch_error)
 		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (crawl_job_id, url) DO NOTHING;
 	`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)

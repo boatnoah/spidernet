@@ -3,6 +3,8 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -27,35 +29,37 @@ type LinkStore struct {
 	db *sql.DB
 }
 
-func (s *LinkStore) Create(ctx context.Context, linkPayload Links) error {
-	query := `
-		INSERT into links (crawl_job_id, from_url, to_url, depth) 
-		VALUES ($1, $2, $3, $4)		
-	`
+func (s *LinkStore) CreateBatch(ctx context.Context, jobID uuid.UUID, fromURL string, toURLs []string, depth int) error {
+	if len(toURLs) == 0 {
+		return nil
+	}
+
+	args := make([]any, 0, len(toURLs)*4)
+	placeholders := make([]string, 0, len(toURLs))
+	for i, toURL := range toURLs {
+		base := i*4 + 1
+		placeholders = append(placeholders, fmt.Sprintf("($%d,$%d,$%d,$%d)", base, base+1, base+2, base+3))
+		args = append(args, jobID, fromURL, toURL, depth)
+	}
+
+	query := fmt.Sprintf(`
+		INSERT INTO links (crawl_job_id, from_url, to_url, depth)
+		VALUES %s
+		ON CONFLICT (crawl_job_id, from_url, to_url) DO NOTHING;
+	`, strings.Join(placeholders, ","))
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	err := s.db.QueryRowContext(
-		ctx,
-		query,
-		linkPayload.CrawlJobID,
-		linkPayload.FromURL,
-		linkPayload.ToURL,
-		linkPayload.Depth,
-	).Err()
-
-	if err != nil {
-		return err
-	}
-
-	return nil
+	_, err := s.db.ExecContext(ctx, query, args...)
+	return err
 }
 
 func (s *LinkStore) GetAllLinksByJobID(ctx context.Context, jobID uuid.UUID) (*[]Links, error) {
 	query := `
-		SELECT * FROM links
-		WHERE job_id = $1
+		SELECT crawl_job_id, from_url, to_url, depth
+		FROM links
+		WHERE crawl_job_id = $1
 	`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
@@ -63,10 +67,11 @@ func (s *LinkStore) GetAllLinksByJobID(ctx context.Context, jobID uuid.UUID) (*[
 
 	var links []Links
 
-	rows, err := s.db.QueryContext(ctx, query)
+	rows, err := s.db.QueryContext(ctx, query, jobID)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var link Links
@@ -77,6 +82,10 @@ func (s *LinkStore) GetAllLinksByJobID(ctx context.Context, jobID uuid.UUID) (*[
 		}
 
 		links = append(links, link)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return &links, nil

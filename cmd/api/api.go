@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/boatnoah/spidernet/internal/graph"
 	"github.com/boatnoah/spidernet/internal/queue"
 	"github.com/boatnoah/spidernet/internal/store"
 	"github.com/go-chi/chi/middleware"
@@ -16,9 +17,10 @@ import (
 )
 
 type application struct {
-	config config
-	store  store.Storage
-	queue  queue.Storage
+	config   config
+	store    store.Storage
+	queue    queue.Storage
+	graphSvc graph.GraphService
 }
 
 type config struct {
@@ -87,6 +89,7 @@ func (app *application) mount() http.Handler {
 		r.Use(middleware.Recoverer)
 		r.Get("/health", app.healthCheckHandler)
 		r.Post("/crawl", app.submitJobHandler)
+		r.Get("/graph/{jobID}", app.graphImageHandler)
 	})
 
 	return r

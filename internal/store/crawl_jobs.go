@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"github.com/google/uuid"
 )
@@ -56,6 +57,9 @@ func (s *CrawlJobStore) CreateJob(ctx context.Context, cj CrawlJobPayload) (*Job
 		&jobID.ID,
 	)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
 		return nil, err
 
 	}
@@ -98,6 +102,9 @@ func (s *CrawlJobStore) GetJobById(ctx context.Context, jobID uuid.UUID) (*Crawl
 	)
 
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
 

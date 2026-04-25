@@ -5,6 +5,7 @@ import (
 
 	"github.com/boatnoah/spidernet/internal/adapter"
 	"github.com/boatnoah/spidernet/internal/env"
+	"github.com/boatnoah/spidernet/internal/graph"
 	"github.com/boatnoah/spidernet/internal/queue"
 	"github.com/boatnoah/spidernet/internal/store"
 )
@@ -41,11 +42,13 @@ func main() {
 
 	rdsClient := queue.NewRedisClient(cfg.redisCfg.addr, cfg.redisCfg.pw, cfg.redisCfg.db)
 	queue := queue.NewRedisStorage(rdsClient)
+	graphSvc := graph.New(store)
 
 	app := &application{
-		config: cfg,
-		store:  store,
-		queue:  queue,
+		config:   cfg,
+		store:    store,
+		queue:    queue,
+		graphSvc: graphSvc,
 	}
 
 	mux := app.mount()
