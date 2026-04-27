@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,46 +13,41 @@ func TestInMemoryQueue(t *testing.T) {
 
 	inmemory := NewInMemory()
 
-	store := Storage{inmemory}
+	jobID := uuid.New()
 
 	pageTasks := [...]PageTask{
-		{
-			CrawlJobID: "1",
-			URL:        "boatnoah.com",
-			Depth:      1,
-		},
-		{
-			CrawlJobID: "1",
-			URL:        "boatnoah.com/home",
-			Depth:      1,
-		},
-		{
-			CrawlJobID: "1",
-			URL:        "boatnoah.com/about",
-			Depth:      1,
-		},
+		{CrawlJobID: jobID, URL: "boatnoah.com", Depth: 1},
+		{CrawlJobID: jobID, URL: "boatnoah.com/home", Depth: 1},
+		{CrawlJobID: jobID, URL: "boatnoah.com/about", Depth: 1},
 	}
 
 	for _, pageTask := range pageTasks {
-		store.Queue.Add(context.Background(), &pageTask)
+		err := inmemory.Add(context.Background(), &pageTask)
+		assert.NoError(err)
 	}
 
 	assert.Len(inmemory.Queue, 3)
+	assert.Equal(int64(3), inmemory.Outstanding[jobID])
 
-	firstTask, err := store.Queue.PopLeft(context.Background())
+	firstTask, err := inmemory.BlockingPop(context.Background())
 
 	if err != nil {
 		assert.Fail("%v", err)
 	}
 
-	assert.Equal("1", firstTask.CrawlJobID)
+	assert.Equal(jobID, firstTask.CrawlJobID)
 	assert.Equal("boatnoah.com", firstTask.URL)
 	assert.Equal(1, firstTask.Depth)
 
-	nextTask, err := store.Queue.Peek(context.Background())
-	assert.Equal("1", nextTask.CrawlJobID)
+	nextTask, err := inmemory.Peek(context.Background())
+	assert.NoError(err)
+	assert.Equal(jobID, nextTask.CrawlJobID)
 	assert.Equal("boatnoah.com/home", nextTask.URL)
 	assert.Equal(1, nextTask.Depth)
 
 	assert.Len(inmemory.Queue, 2)
+
+	remaining, err := inmemory.DecrementOutstanding(context.Background(), jobID)
+	assert.NoError(err)
+	assert.Equal(int64(2), remaining)
 }

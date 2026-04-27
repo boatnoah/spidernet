@@ -39,6 +39,28 @@ func (c *CrawlerService) ProcessTask(ctx context.Context) error {
 	jobID := task.CrawlJobID
 	depth := task.Depth
 
+	var taskErr error
+	defer func() {
+		remaining, err := c.queue.DecrementOutstanding(ctx, jobID)
+		if err != nil {
+			log.Printf("unable to decrement outstanding for job %v: %v", jobID, err)
+			return
+		}
+
+		if taskErr != nil {
+			if err := c.store.CrawlJobs.UpdateStatus(ctx, jobID, "failed"); err != nil {
+				log.Printf("unable to mark job %v failed: %v", jobID, err)
+			}
+			return
+		}
+
+		if remaining == 0 {
+			if err := c.store.CrawlJobs.UpdateStatus(ctx, jobID, "completed"); err != nil {
+				log.Printf("unable to mark job %v completed: %v", jobID, err)
+			}
+		}
+	}()
+
 	job, err := c.store.CrawlJobs.GetJobById(ctx, jobID)
 
 	if err != nil {
@@ -46,7 +68,8 @@ func (c *CrawlerService) ProcessTask(ctx context.Context) error {
 			log.Printf("skipping job with id:%v; job not found", jobID)
 			return nil
 		}
-		return err
+		taskErr = err
+		return taskErr
 	}
 
 	maxDepth := job.MaxDepth
@@ -66,7 +89,8 @@ func (c *CrawlerService) ProcessTask(ctx context.Context) error {
 		}
 
 		c.store.Pages.Create(ctx, pageInfo)
-		return err
+		taskErr = err
+		return taskErr
 	}
 
 	pageInfo := store.PageRequestInfo{
@@ -78,24 +102,30 @@ func (c *CrawlerService) ProcessTask(ctx context.Context) error {
 
 	err = c.store.Pages.Create(ctx, pageInfo)
 	if err != nil {
-		return err
+		taskErr = err
+		return taskErr
 	}
 
 	links, err := extractLinks(doc)
 
 	if err != nil {
-		return err
+		taskErr = err
+		return taskErr
 	}
 
 	err = c.store.Links.CreateBatch(ctx, jobID, task.URL, links, depth)
 	if err != nil {
-		return err
+		taskErr = err
+		return taskErr
 	}
 
 	for _, link := range links {
 		pageTask := queue.CreatePageTask(jobID, link, depth+1)
 
-		c.queue.Add(ctx, pageTask)
+		if err := c.queue.Add(ctx, pageTask); err != nil {
+			taskErr = err
+			return taskErr
+		}
 	}
 
 	return nil

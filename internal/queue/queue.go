@@ -3,6 +3,7 @@ package queue
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -24,6 +25,10 @@ func CreatePageTask(jobID uuid.UUID, url string, depth int) *PageTask {
 	return &PageTask{jobID, url, depth}
 }
 
+func outstandingKey(jobID uuid.UUID) string {
+	return fmt.Sprintf("crawloutstanding:%s", jobID.String())
+}
+
 func (rq *RedisQueue) Add(ctx context.Context, pt *PageTask) error {
 
 	ptString, err := json.Marshal(pt)
@@ -32,8 +37,10 @@ func (rq *RedisQueue) Add(ctx context.Context, pt *PageTask) error {
 		return err
 	}
 
-	err = rq.rds.RPush(ctx, queueKey, ptString).Err()
-
+	pipe := rq.rds.TxPipeline()
+	pipe.Incr(ctx, outstandingKey(pt.CrawlJobID))
+	pipe.RPush(ctx, queueKey, ptString)
+	_, err = pipe.Exec(ctx)
 	if err != nil {
 		return err
 	}
@@ -71,4 +78,12 @@ func (rq *RedisQueue) Peek(ctx context.Context) (*PageTask, error) {
 		return nil, err
 	}
 	return &pt, nil
+}
+
+func (rq *RedisQueue) IncrementOutstanding(ctx context.Context, jobID uuid.UUID) (int64, error) {
+	return rq.rds.Incr(ctx, outstandingKey(jobID)).Result()
+}
+
+func (rq *RedisQueue) DecrementOutstanding(ctx context.Context, jobID uuid.UUID) (int64, error) {
+	return rq.rds.Decr(ctx, outstandingKey(jobID)).Result()
 }
