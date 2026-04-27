@@ -55,7 +55,7 @@ func (s *LinkStore) CreateBatch(ctx context.Context, jobID uuid.UUID, fromURL st
 	return err
 }
 
-func (s *LinkStore) GetAllLinksByJobID(ctx context.Context, jobID uuid.UUID) (*[]Links, error) {
+func (s *LinkStore) GetAllLinksByJobID(ctx context.Context, jobID uuid.UUID) ([]Links, error) {
 	query := `
 		SELECT crawl_job_id, from_url, to_url, depth
 		FROM links
@@ -88,5 +88,5 @@ func (s *LinkStore) GetAllLinksByJobID(ctx context.Context, jobID uuid.UUID) (*[
 		return nil, err
 	}
 
-	return &links, nil
+	return links, nil
 }

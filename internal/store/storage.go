@@ -19,7 +19,7 @@ var (
 type Storage struct {
 	Links interface {
 		CreateBatch(ctx context.Context, jobID uuid.UUID, fromURL string, toURLs []string, depth int) error
-		GetAllLinksByJobID(context.Context, uuid.UUID) (*[]Links, error)
+		GetAllLinksByJobID(context.Context, uuid.UUID) ([]Links, error)
 	}
 	Pages interface {
 		Create(context.Context, PageRequestInfo) error

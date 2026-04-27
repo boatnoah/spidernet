@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -15,19 +14,11 @@ func (app *application) graphImageHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, "unable to parse uuid", http.StatusBadRequest)
 		return
 	}
-	bytes, err := app.graphSvc.CreateGraph(r.Context(), jobID)
+	bytes, err := app.graphSvc.CreateGraph(r.Context(), jobID, "png")
 	if err != nil {
 		http.Error(w, "unable to create graph", http.StatusInternalServerError)
 		return
 	}
 
-	b, err := io.ReadAll(bytes)
-
-	if err != nil {
-		http.Error(w, "unable to convert to bytes", http.StatusInternalServerError)
-		return
-	}
-
-	w.Write([]byte(b))
-
+	w.Write(bytes)
 }
