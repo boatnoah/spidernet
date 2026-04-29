@@ -7,6 +7,7 @@ import (
 
 	"github.com/boatnoah/spidernet/internal/queue"
 	"github.com/boatnoah/spidernet/internal/store"
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
@@ -68,5 +69,31 @@ func (app *application) submitJobHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.Write(responseJson)
+
+}
+
+func (app *application) getJobStatusHandler(w http.ResponseWriter, r *http.Request) {
+	jobID, err := uuid.Parse(chi.URLParam(r, "jobID"))
+
+	if err != nil {
+		http.Error(w, "unable to parse job id", http.StatusBadRequest)
+		return
+	}
+
+	crawlJob, err := app.store.CrawlJobs.GetJobById(r.Context(), jobID)
+
+	if err != nil {
+		http.Error(w, "unable to find job", http.StatusBadRequest)
+		return
+	}
+
+	jsonB, err := json.MarshalIndent(crawlJob, "", " ")
+
+	if err != nil {
+		http.Error(w, "unable to parse json", http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(jsonB)
 
 }

@@ -89,7 +89,10 @@ func (app *application) mount() http.Handler {
 		r.Use(middleware.Recoverer)
 		r.Get("/health", app.healthCheckHandler)
 		r.Post("/crawl", app.submitJobHandler)
-		r.Get("/graph/{jobID}", app.graphImageHandler)
+		r.Route("/jobs", func(r chi.Router) {
+			r.Get("/{jobID}/graph", app.graphImageHandler)
+			r.Get("/{jobID}/status", app.getJobStatusHandler)
+		})
 	})
 
 	return r
